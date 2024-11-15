@@ -92,7 +92,7 @@ if __name__ == '__main__':
         except FileNotFoundError:
             pass
     except Exception as e:
-        with open('exception.txt') as file:
+        with open('exception.txt', 'w') as file:
             file.write(str(e))
         try:
             subprocess.call(['termux-toast', 'Failed'])
