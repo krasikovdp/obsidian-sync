@@ -62,7 +62,7 @@ def main():
             old_hash = sync_info[name]['md5']
             new_hash = vault_hash(vaults_path.joinpath(name))
             file_changed_locally = old_hash != new_hash
-            file_changed_remotely = new_hash != data['vaults'][name]['md5']
+            file_changed_remotely = new_hash != data['vaults'][name]['md5'] and old_hash != data['vaults'][name]['md5']
             if file_changed_remotely and file_changed_locally:
                 toast(f'Vault {name} changed both remotely and locally')
             cur_time = int(time.time())
@@ -79,7 +79,7 @@ def main():
                 zip_files[-1].write_bytes(b64decode(data['vaults'][name]['file']))
                 sync_info[name]['md5'] = data['vaults'][name]['md5']
                 sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
-                toast(f'Downloading remote change to {name}')
+                toast(f'Downloading remote change from {name}')
             else:
                 toast(f'No changes to {name}')
                 zip_files.pop()
