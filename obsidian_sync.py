@@ -64,11 +64,12 @@ def main():
             file_changed_locally = old_hash != new_hash
             file_changed_remotely = new_hash != data['vaults'][name]['md5']
             if file_changed_remotely and file_changed_locally:
-                toast('File changed both remotely and locally')
+                toast(f'Vault {name} changed both remotely and locally')
             cur_time = int(time.time())
             zip_files.append(vaults_path.joinpath(name + '.zip'))
             if file_changed_locally:
                 sync_info[name]['last_edit'] = cur_time
+                sync_info[name]['md5'] = new_hash
                 shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
                 data['vaults'][name]['file'] = b64encode(zip_files[-1].read_bytes()).decode('utf-8')
                 data['vaults'][name]['md5'] = sync_info[name]['md5']
