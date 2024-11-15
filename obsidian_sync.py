@@ -32,6 +32,13 @@ def vault_hash(path: Path) -> str:
     return hash.hexdigest()
 
 
+def toast(msg: str):
+    try:
+        subprocess.call(['termux-toast', f'"{msg}"'])
+    except FileNotFoundError:
+        pass
+
+
 def main():
     basket = PantryBasket(PANTRY_ID, BASKET_NAME)
     data = basket.get()
@@ -50,21 +57,40 @@ def main():
             sync_info.setdefault(name, {})
             sync_info[name].setdefault('last_edit', 0)
             sync_info[name].setdefault('md5', '')
-            sync_info[name]['md5'] = vault_hash(vaults_path.joinpath(name))
-            cur_time = int(time.time())
             data['vaults'].setdefault(name, {'md5': '-', 'last_edit': -1})
-            if sync_info[name]['md5'] != data['vaults'][name]['md5']:
+            old_hash = sync_info[name]['md5']
+            new_hash = vault_hash(vaults_path.joinpath(name))
+            file_changed_locally = old_hash != new_hash
+            file_changed_remotely = new_hash != data['vaults'][name]['md5']
+            if file_changed_remotely and file_changed_locally:
+                toast('File changed both remotely and locally')
+            cur_time = int(time.time())
+            if file_changed_locally:
                 sync_info[name]['last_edit'] = cur_time
-                if data['vaults'][name]['last_edit'] < sync_info[name]['last_edit']:
-                    shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
-                    zip_files.append(vaults_path.joinpath(name + '.zip'))
-                    data['vaults'][name]['file'] = b64encode(zip_files[-1].read_bytes()).decode('utf-8')
-                    data['vaults'][name]['md5'] = sync_info[name]['md5']
-                    data['vaults'][name]['last_edit'] = sync_info[name]['last_edit']
-                else:
-                    zip_files[-1].write_bytes(b64decode(data['vaults'][name]['file']))
-                    sync_info[name]['md5'] = data['vaults'][name]['md5']
-                    sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
+                shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
+                zip_files.append(vaults_path.joinpath(name + '.zip'))
+                data['vaults'][name]['file'] = b64encode(zip_files[-1].read_bytes()).decode('utf-8')
+                data['vaults'][name]['md5'] = sync_info[name]['md5']
+                data['vaults'][name]['last_edit'] = sync_info[name]['last_edit']
+                toast('Uploading local change')
+            elif file_changed_remotely:
+                zip_files[-1].write_bytes(b64decode(data['vaults'][name]['file']))
+                sync_info[name]['md5'] = data['vaults'][name]['md5']
+                sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
+                toast('Downloading remote change')
+
+            # if sync_info[name]['md5'] != data['vaults'][name]['md5']:
+            #     sync_info[name]['last_edit'] = cur_time
+            #     if data['vaults'][name]['last_edit'] < sync_info[name]['last_edit']:
+            #         shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
+            #         zip_files.append(vaults_path.joinpath(name + '.zip'))
+            #         data['vaults'][name]['file'] = b64encode(zip_files[-1].read_bytes()).decode('utf-8')
+            #         data['vaults'][name]['md5'] = sync_info[name]['md5']
+            #         data['vaults'][name]['last_edit'] = sync_info[name]['last_edit']
+            #     else:
+            #         zip_files[-1].write_bytes(b64decode(data['vaults'][name]['file']))
+            #         sync_info[name]['md5'] = data['vaults'][name]['md5']
+            #         sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
     for name in data['vaults'].keys():
         if name not in local_vaults:
             zip_files.append(vaults_path.joinpath(name + '.zip'))
@@ -101,14 +127,9 @@ def test():
 if __name__ == '__main__':
     try:
         main()
-        try:
-            subprocess.call(['termux-toast', 'Success'])
-        except FileNotFoundError:
-            pass
+        toast('Success')
     except Exception as e:
+        toast('Failed')
         with open('exception.txt', 'w') as file:
             file.write(str(e))
-        try:
-            subprocess.call(['termux-toast', 'Failed'])
-        except FileNotFoundError:
-            pass
+        raise e
