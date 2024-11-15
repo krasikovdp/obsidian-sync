@@ -81,7 +81,7 @@ def main():
                 sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
                 toast(f'Downloading remote change from {name}')
             else:
-                toast(f'No changes to {name}')
+                print(f'No changes to {name}')
                 zip_files.pop()
 
             # if sync_info[name]['md5'] != data['vaults'][name]['md5']:
