@@ -45,7 +45,11 @@ def main():
 
             zip_files.append(vaults_path.joinpath(name + '.zip'))
             shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
-            hash = hashlib.md5(zip_files[-1].read_bytes()).digest().hex()
+            hash = hashlib.md5()
+            for i in vaults_path.joinpath(name).glob('**/*'):
+                if i.is_file() and '.obsidian' not in i.parts:
+                    hash.update(i.read_bytes())
+            hash = hash.hexdigest()
             sync_info[name]['md5'] = hash
             cur_time = int(time.time())
             data['vaults'].setdefault(name, {'md5': '-', 'last_edit': -1})
@@ -81,7 +85,14 @@ def main():
 
 
 def test():
-    pass
+    vaults_path = Path(VAULTS_DIR)
+    hash = hashlib.md5()
+    for i in vaults_path.joinpath('Asteroids').glob('**/*'):
+        if i.is_file() and '.obsidian' not in i.parts:
+            print(i)
+            hash.update(i.read_bytes())
+    hash = hash.hexdigest()
+    print(hash)
 
 
 if __name__ == '__main__':
