@@ -33,6 +33,7 @@ def vault_hash(path: Path) -> str:
 
 
 def toast(msg: str):
+    print(msg)
     try:
         subprocess.call(['termux-toast', f'"{msg}"'])
     except FileNotFoundError:
@@ -65,21 +66,22 @@ def main():
             if file_changed_remotely and file_changed_locally:
                 toast('File changed both remotely and locally')
             cur_time = int(time.time())
+            zip_files.append(vaults_path.joinpath(name + '.zip'))
             if file_changed_locally:
                 sync_info[name]['last_edit'] = cur_time
                 shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
-                zip_files.append(vaults_path.joinpath(name + '.zip'))
                 data['vaults'][name]['file'] = b64encode(zip_files[-1].read_bytes()).decode('utf-8')
                 data['vaults'][name]['md5'] = sync_info[name]['md5']
                 data['vaults'][name]['last_edit'] = sync_info[name]['last_edit']
-                toast('Uploading local change')
+                toast(f'Uploading local change to {name}')
             elif file_changed_remotely:
                 zip_files[-1].write_bytes(b64decode(data['vaults'][name]['file']))
                 sync_info[name]['md5'] = data['vaults'][name]['md5']
                 sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
-                toast('Downloading remote change')
+                toast(f'Downloading remote change to {name}')
             else:
-                toast('No changes')
+                toast(f'No changes to {name}')
+                zip_files.pop()
 
             # if sync_info[name]['md5'] != data['vaults'][name]['md5']:
             #     sync_info[name]['last_edit'] = cur_time
