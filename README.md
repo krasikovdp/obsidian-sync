@@ -1,3 +1,4 @@
+# Obsidian Sync
 Sync script for obsidian because I don't wanna pay 4 bucks a month.
 
 ## Storage
