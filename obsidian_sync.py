@@ -24,6 +24,14 @@ class PantryBasket:
         return resp.json()
 
 
+def vault_hash(path: Path) -> str:
+    hash = hashlib.md5()
+    for i in path.glob('**/*'):
+        if i.is_file() and '.obsidian' not in i.parts:
+            hash.update(i.read_bytes())
+    return hash.hexdigest()
+
+
 def main():
     basket = PantryBasket(PANTRY_ID, BASKET_NAME)
     data = basket.get()
@@ -42,20 +50,14 @@ def main():
             sync_info.setdefault(name, {})
             sync_info[name].setdefault('last_edit', 0)
             sync_info[name].setdefault('md5', '')
-
-            zip_files.append(vaults_path.joinpath(name + '.zip'))
-            shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
-            hash = hashlib.md5()
-            for i in vaults_path.joinpath(name).glob('**/*'):
-                if i.is_file() and '.obsidian' not in i.parts:
-                    hash.update(i.read_bytes())
-            hash = hash.hexdigest()
-            sync_info[name]['md5'] = hash
+            sync_info[name]['md5'] = vault_hash(vaults_path.joinpath(name))
             cur_time = int(time.time())
             data['vaults'].setdefault(name, {'md5': '-', 'last_edit': -1})
-            if hash != data['vaults'][name]['md5']:
+            if sync_info[name]['md5'] != data['vaults'][name]['md5']:
                 sync_info[name]['last_edit'] = cur_time
                 if data['vaults'][name]['last_edit'] < sync_info[name]['last_edit']:
+                    shutil.make_archive(vaults_path.joinpath(name), 'zip', path)
+                    zip_files.append(vaults_path.joinpath(name + '.zip'))
                     data['vaults'][name]['file'] = b64encode(zip_files[-1].read_bytes()).decode('utf-8')
                     data['vaults'][name]['md5'] = sync_info[name]['md5']
                     data['vaults'][name]['last_edit'] = sync_info[name]['last_edit']
@@ -85,14 +87,15 @@ def main():
 
 
 def test():
-    vaults_path = Path(VAULTS_DIR)
-    hash = hashlib.md5()
-    for i in vaults_path.joinpath('Asteroids').glob('**/*'):
-        if i.is_file() and '.obsidian' not in i.parts:
-            print(i)
-            hash.update(i.read_bytes())
-    hash = hash.hexdigest()
-    print(hash)
+    # vaults_path = Path(VAULTS_DIR)
+    # hash = hashlib.md5()
+    # for i in vaults_path.joinpath('Asteroids').glob('**/*'):
+    #     if i.is_file() and '.obsidian' not in i.parts:
+    #         print(i)
+    #         hash.update(i.read_bytes())
+    # hash = hash.hexdigest()
+    # print(hash)
+    print(hashlib.md5().hexdigest())
 
 
 if __name__ == '__main__':
