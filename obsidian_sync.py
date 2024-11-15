@@ -78,6 +78,8 @@ def main():
                 sync_info[name]['md5'] = data['vaults'][name]['md5']
                 sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
                 toast('Downloading remote change')
+            else:
+                toast('No changes')
 
             # if sync_info[name]['md5'] != data['vaults'][name]['md5']:
             #     sync_info[name]['last_edit'] = cur_time
