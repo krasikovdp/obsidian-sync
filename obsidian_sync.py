@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from base64 import b64decode, b64encode
 import requests
@@ -106,11 +107,14 @@ def main():
             sync_info[name]['last_edit'] = data['vaults'][name]['last_edit']
     for zip_file in zip_files:
         vault = vaults_path.joinpath(zip_file.stem)
-        try:
-            shutil.rmtree(vault)
-        except FileNotFoundError:
-            pass  # if new vault is fetched
-        vault.mkdir()
+        if vault.exists():
+            for path in vault.iterdir():
+                if path.is_file():
+                    os.remove(path)
+                else:
+                    shutil.rmtree(path)
+        else:
+            vault.mkdir()
         shutil.unpack_archive(zip_file, vault, 'zip')
         zip_file.unlink()
     sync_info_file.write_text(json.dumps(sync_info, indent=2))
